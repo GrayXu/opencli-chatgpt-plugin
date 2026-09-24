@@ -1,0 +1,21 @@
+{
+  "name": "opencli-chatgpt-plugin",
+  "version": "2.0.0",
+  "description": "Configurable OpenCLI MCP gateway for ChatGPT Work",
+  "private": true,
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test server.test.mjs",
+    "catalog": "node catalog-cli.mjs"
+  },
+  "keywords": [],
+  "author": "GrayXu",
+  "license": "UNLICENSED",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "express": "5.1.0",
+    "zod": "4.1.12"
+  }
+}

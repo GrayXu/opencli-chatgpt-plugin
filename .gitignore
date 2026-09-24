@@ -1,0 +1,10 @@
+node_modules/
+.local/
+config.json
+.env
+*.log
+*.approval
+*.tmp
+state.json
+password
+signing-key

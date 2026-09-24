@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "adapters": {
+    "xiaohongshu": {
+      "enabled": true,
+      "access": "read",
+      "tools": ["search"],
+      "rules": {
+        "search": {
+          "query": { "minLength": 1, "maxLength": 80 },
+          "limit": { "min": 1, "max": 10, "default": 5 }
+        }
+      }
+    }
+  }
+}

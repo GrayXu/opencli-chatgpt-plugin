@@ -1,0 +1,57 @@
+--- a/clis/xiaohongshu/search.js
++++ b/clis/xiaohongshu/search.js
+@@ -283,6 +283,11 @@
+     func: async (page, kwargs) => {
+         const limit = parseLimit(kwargs.limit);
+         const keyword = encodeURIComponent(kwargs.query);
++        let captureStarted = false;
++        try {
++            captureStarted = await page.startNetworkCapture?.('/api/sns/web/v2/search/notes') ?? false;
++        }
++        catch { /* Continue with DOM extraction. */ }
+         await page.goto(`https://www.xiaohongshu.com/search_result?keyword=${keyword}&source=web_search_result_notes`);
+         // Wait for search results to render (or login wall to appear).
+         // Uses MutationObserver to resolve as soon as content appears,
+@@ -314,7 +319,41 @@
+                     break;
+             }
+         }
+-        const data = payload;
++        let data = payload;
++        if (!data.some((item) => item.title) && captureStarted) {
++            const captures = await page.readNetworkCapture();
++            const searchResponse = captures.reverse().find((entry) =>
++                entry.url?.includes('/api/sns/web/v2/search/notes') &&
++                Number(entry.responseStatus) === 200 &&
++                !entry.responseBodyTruncated);
++            if (searchResponse?.responsePreview) {
++                try {
++                    const response = JSON.parse(searchResponse.responsePreview);
++                    const items = response?.data?.items;
++                    if (Array.isArray(items)) {
++                        // The search API can contain notes even when masonry cards do not render.
++                        data = items
++                            .filter((item) => item.model_type === 'note' &&
++                                /^[0-9a-f]{24}$/i.test(item.id || '') &&
++                                item.xsec_token && item.note_card?.display_title)
++                            .map((item) => {
++                                const url = new URL('https://www.xiaohongshu.com/search_result/' + item.id);
++                                url.searchParams.set('xsec_token', item.xsec_token);
++                                return {
++                                    title: item.note_card.display_title,
++                                    author: item.note_card.user?.nick_name || item.note_card.user?.nickname || '',
++                                    likes: String(item.note_card.interact_info?.liked_count ?? '0'),
++                                    url: url.toString(),
++                                    author_url: item.note_card.user?.user_id
++                                        ? 'https://www.xiaohongshu.com/user/profile/' + encodeURIComponent(item.note_card.user.user_id)
++                                        : '',
++                                };
++                            });
++                    }
++                }
++                catch { /* Keep the empty DOM result if the capture is not valid JSON. */ }
++            }
++        }
+         return data
+             .filter((item) => item.title)
+             .slice(0, limit)
